@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: #333;">Teacher Ratings</h1>
+    <p style="color: #666; font-size: 0.95rem;">Collège de Montréal</p>
+</div>
+
+<div style="background: white; padding: 1.5rem; border: 1px solid #ddd; margin-bottom: 2rem;">
+    <form method="GET" action="/" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <input
+            type="text"
+            name="q"
+            placeholder="Search by name or department..."
+            value="{{ query }}"
+            style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.95rem; min-width: 200px;"
+        >
+        <button type="submit" class="btn btn-primary">Search</button>
+        {% if query %}
+        <a href="/" class="btn btn-secondary">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<div style="background: white; padding: 1rem; border: 1px solid #ddd; margin-bottom: 2rem; display: flex; justify-content: space-between;">
+    <div>
+        <strong>{{ teachers|length }}</strong> teacher{{ 's' if teachers|length != 1 else '' }}
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+    {% if teachers %}
+        {% for teacher in teachers %}
+        <div style="background: white; padding: 1.5rem; border: 1px solid #ddd;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="color: #333; margin-bottom: 0.5rem; font-size: 1.1rem;">{{ teacher.name }}</h3>
+                    <span style="background: #0066cc; color: white; padding: 2px 8px; font-size: 0.8rem;">{{ teacher.department }}</span>
+                </div>
+                <div style="text-align: center; background: #f9f9f9; padding: 0.5rem 1rem; min-width: 60px;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #333;">
+                        {{ teacher.average_rating|round(1) }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #666;">{{ teacher.total_ratings }}</div>
+                </div>
+            </div>
+            <a href="/teacher/{{ teacher.id }}" class="btn btn-secondary" style="display: block; text-align: center; width: 100%;">View Details</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: white; border: 1px solid #ddd;">
+            <p style="color: #666;">No teachers found matching your search.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

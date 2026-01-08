@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<a href="/" class="btn btn-secondary" style="margin-bottom: 1.5rem; display: inline-block;">← Back to Teachers</a>
+
+<div style="background: white; padding: 1.5rem; border: 1px solid #ddd; margin-bottom: 2rem;">
+    <h1 style="font-size: 1.6rem; margin-bottom: 0.5rem; color: #333;">{{ teacher.name }}</h1>
+    <div style="margin-bottom: 1.5rem; color: #666; font-size: 0.95rem;">
+        <strong>Department:</strong> {{ teacher.department }}
+        {% if teacher.email %} | <strong>Email:</strong> {{ teacher.email }}{% endif %}
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 2rem;">
+        <div style="text-align: center; background: #f9f9f9; padding: 1rem; min-width: 80px; border: 1px solid #ddd;">
+            <div style="font-size: 2rem; font-weight: bold; color: #333;">
+                {{ teacher.average_rating }}
+            </div>
+            <div style="font-size: 0.8rem; color: #666;">Rating</div>
+        </div>
+        <div style="text-align: center; background: #f9f9f9; padding: 1rem; min-width: 80px; border: 1px solid #ddd;">
+            <div style="font-size: 2rem; font-weight: bold; color: #333;">
+                {{ teacher.total_ratings }}
+            </div>
+            <div style="font-size: 0.8rem; color: #666;">Review{{ 's' if teacher.total_ratings != 1 else '' }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="background: white; padding: 1.5rem; border: 1px solid #ddd; margin-bottom: 2rem;">
+    <h2 style="margin-bottom: 1rem; font-size: 1.2rem; color: #333;">Add a Review</h2>
+
+    {% if session.user_id %}
+    <form method="POST" action="/rate/{{ teacher.id }}">
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: normal; color: #333;">Rating (1-5)</label>
+            <div>
+                {% for i in range(1, 6) %}
+                <label style="margin-right: 1rem; cursor: pointer;">
+                    <input type="radio" name="rating" value="{{ i }}" required style="margin-right: 5px;">
+                    {{ i }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label for="comment" style="display: block; margin-bottom: 0.5rem; font-weight: normal; color: #333;">Comment</label>
+            <textarea
+                id="comment"
+                name="comment"
+                rows="4"
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.95rem; font-family: inherit; resize: vertical;"
+            ></textarea>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" name="anonymous" style="width: 16px; height: 16px;">
+                <span style="color: #333; font-size: 0.95rem;">Post anonymously</span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Review</button>
+    </form>
+    {% else %}
+    <div style="padding: 1.5rem; background: #f9f9f9; border: 1px solid #ddd; text-align: center;">
+        <p style="margin: 0; color: #666;">Please <a href="/login" style="color: #0066cc; text-decoration: none;">log in</a> or <a href="/register" style="color: #0066cc; text-decoration: none;">register</a> to leave a review.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div style="background: white; padding: 1.5rem; border: 1px solid #ddd;">
+    <h2 style="margin-bottom: 1.5rem; font-size: 1.2rem; color: #333;">Reviews</h2>
+
+    {% if ratings %}
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for rating in ratings %}
+        <div style="border: 1px solid #ddd; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <strong style="color: #333; font-size: 0.95rem;">
+                        {{ 'Anonymous' if rating.is_anonymous else rating.username }}
+                    </strong>
+                </div>
+                <div style="color: #666; font-size: 0.85rem;">
+                    {{ rating.created_at[:10] }}
+                </div>
+            </div>
+            <div style="color: #333; font-size: 1rem; margin-bottom: 0.5rem;">
+                Rating: <strong>{{ rating.rating }}/5</strong>
+            </div>
+            {% if rating.comment %}
+            <div style="padding: 0.75rem; background: #f9f9f9; color: #333; font-size: 0.95rem; line-height: 1.5;">
+                {{ rating.comment }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: #666;">
+        <p>No reviews yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

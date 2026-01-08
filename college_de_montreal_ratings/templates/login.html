@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 3rem auto; background: white; padding: 2rem; border: 1px solid #ddd;">
+    <h1 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: #333;">Sign In</h1>
+
+    <form method="POST">
+        <div style="margin-bottom: 1rem;">
+            <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: normal; color: #333;">Username</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                required
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.95rem;"
+            >
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: normal; color: #333;">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 0.95rem;"
+            >
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
+    </form>
+
+    <div style="margin-top: 1.5rem; color: #555; font-size: 0.9rem;">
+        Don't have an account? <a href="/register" style="color: #0066cc; text-decoration: none;">Register</a>
+    </div>
+</div>
+{% endblock %}
