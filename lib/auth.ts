@@ -68,6 +68,7 @@ export async function signUpUser(
     joinedAt: new Date(),
     posts: 0,
     comments: 0,
+    isAdmin: false,
   };
   
   // Save user with password data (stored separately with hash and salt)
@@ -130,7 +131,7 @@ async function savePasswordData(data: PasswordData): Promise<void> {
   await fs.writeFile(PASSWORD_DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-async function saveUserPasswordData(userId: string, hash: string, salt: string): Promise<void> {
+export async function saveUserPasswordData(userId: string, hash: string, salt: string): Promise<void> {
   const passwordData = await getPasswordData();
   passwordData[userId] = { hash, salt };
   await savePasswordData(passwordData);

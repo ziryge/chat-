@@ -87,6 +87,30 @@ export async function getUserByUsername(username: string): Promise<User | null> 
   return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
 }
 
+export async function deleteUser(userId: string): Promise<void> {
+  await initDataDir();
+  const users = await getAllUsers();
+  const filteredUsers = users.filter(u => u.id !== userId);
+  await writeJSON(USERS_FILE, filteredUsers);
+}
+
+export async function updateUser(user: User): Promise<void> {
+  await saveUser(user);
+}
+
+export async function getHashedPassword(userId: string): Promise<{ hash: string; salt: string } | null> {
+  const passwordsFile = path.join(DATA_DIR, 'passwords.json');
+  
+  try {
+    await fs.access(passwordsFile);
+    const data = await fs.readFile(passwordsFile, 'utf-8');
+    const passwords = JSON.parse(data);
+    return passwords[userId] || null;
+  } catch {
+    return null;
+  }
+}
+
 // Post storage
 export async function getAllPosts(): Promise<Post[]> {
   await initDataDir();
@@ -199,4 +223,77 @@ export async function cleanupExpiredSessions(): Promise<void> {
   }
   
   await writeJSON(SESSIONS_FILE, sessions);
+}
+
+// Notification storage
+const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'notifications.json');
+
+export async function getAllNotifications(): Promise<any[]> {
+  await initDataDir();
+  try {
+    await fs.access(NOTIFICATIONS_FILE);
+    const data = await fs.readFile(NOTIFICATIONS_FILE, 'utf-8');
+    const result = JSON.parse(data);
+    return Array.isArray(result) ? result : [];
+  } catch {
+    await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify([], null, 2), 'utf8');
+    return [];
+  }
+}
+
+export async function saveNotification(notification: any): Promise<void> {
+  const notifications = await getAllNotifications();
+  notifications.unshift(notification); // Add to beginning
+  await writeJSON(NOTIFICATIONS_FILE, notifications);
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  const notifications = await getAllNotifications();
+  const index = notifications.findIndex(n => n.id === notificationId);
+  if (index >= 0) {
+    notifications[index].read = true;
+    await writeJSON(NOTIFICATIONS_FILE, notifications);
+  }
+}
+
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+  const notifications = await getAllNotifications();
+  notifications.forEach(n => {
+    if (!n.read && n.userId === userId) {
+      n.read = true;
+    }
+  });
+  await writeJSON(NOTIFICATIONS_FILE, notifications);
+}
+
+export async function getUserUnreadNotificationCount(userId: string): Promise<number> {
+  const notifications = await getAllNotifications();
+  return notifications.filter(n => !n.read && n.userId === userId).length;
+}
+
+// Mention storage
+const MENTIONS_FILE = path.join(DATA_DIR, 'mentions.json');
+
+export async function getAllMentions(): Promise<any[]> {
+  await initDataDir();
+  try {
+    await fs.access(MENTIONS_FILE);
+    const data = await fs.readFile(MENTIONS_FILE, 'utf-8');
+    const result = JSON.parse(data);
+    return Array.isArray(result) ? result : [];
+  } catch {
+    await fs.writeFile(MENTIONS_FILE, JSON.stringify([], null, 2), 'utf8');
+    return [];
+  }
+}
+
+export async function saveMention(mention: any): Promise<void> {
+  const mentions = await getAllMentions();
+  mentions.unshift(mention);
+  await writeJSON(MENTIONS_FILE, mentions);
+}
+
+export async function getUserMentions(userId: string): Promise<any[]> {
+  const mentions = await getAllMentions();
+  return mentions.filter(m => m.mentionedUserId === userId);
 }

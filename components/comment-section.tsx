@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowUp, ArrowDown, Reply } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Avatar } from '@/ui/avatar';
 import { Comment as CommentType } from '@/lib/types';
 import { formatDate, formatNumber } from '@/lib/utils';
+import { MentionableText } from '@/components/mentionable-text';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -67,9 +69,9 @@ function Comment({ comment, isReply = false }: CommentProps) {
             </div>
           </div>
 
-          <p className="text-sm leading-relaxed whitespace-pre-line mb-2">
-            {comment.content}
-          </p>
+          <div className="text-sm leading-relaxed whitespace-pre-line mb-2">
+            <MentionableText text={comment.content} />
+          </div>
 
           {comment.codeSnippet && (
             <div className="mb-3 rounded-lg border bg-[#1e1e1e] overflow-hidden">
@@ -152,10 +154,50 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ comments }: CommentSectionProps) {
+  const router = useRouter();
+  const [commentText, setCommentText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentComments, setCurrentComments] = useState(comments);
+
+  // Update comments when props change
+  useEffect(() => {
+    setCurrentComments(comments);
+  }, [comments]);
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const postId = window.location.pathname.split('/').pop();
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: commentText,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentComments(data.post.comments);
+        setCommentText('');
+      } else if (response.status === 401) {
+        router.push('/signin');
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="mt-6 pt-6 border-t">
       <h3 className="text-lg font-semibold mb-4">
-        Comments ({comments.length})
+        Comments ({currentComments.length})
       </h3>
 
       {/* Comment Input */}
@@ -169,22 +211,35 @@ export function CommentSection({ comments }: CommentSectionProps) {
               className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               placeholder="What are your thoughts?"
               rows={3}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
             />
             <div className="flex justify-end gap-2 mt-2">
-              <Button variant="ghost">Cancel</Button>
-              <Button>Post Comment</Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setCommentText('')}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSubmitComment}
+                disabled={!commentText.trim() || isSubmitting}
+              >
+                {isSubmitting ? 'Posting...' : 'Post Comment'}
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Comments List */}
-      {comments.length === 0 ? (
+      {currentComments.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           No comments yet. Be the first to share your thoughts!
         </div>
       ) : (
-        comments.map((comment) => (
+        currentComments.map((comment) => (
           <Comment key={comment.id} comment={comment} />
         ))
       )}

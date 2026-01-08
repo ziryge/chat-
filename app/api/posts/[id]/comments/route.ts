@@ -3,7 +3,7 @@ import { getPostById, addCommentToPost } from '@/lib/posts';
 import { getSession, getUserById } from '@/lib/storage';
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // POST /api/posts/[id]/comments - Add a comment to a post
@@ -12,21 +12,22 @@ export async function POST(
   context: RouteContext
 ) {
   try {
+    const params = await context.params;
     const body = await request.json();
     const { content, codeSnippet, parentId } = body;
-    
+
     // Get current user from session
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('session_id')?.value;
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
+
     const session = await getSession(sessionId);
     if (!session) {
       return NextResponse.json(
@@ -34,7 +35,7 @@ export async function POST(
         { status: 401 }
       );
     }
-    
+
     const user = await getUserById(session.userId);
     if (!user) {
       return NextResponse.json(
@@ -42,7 +43,7 @@ export async function POST(
         { status: 404 }
       );
     }
-    
+
     // Validate required fields
     if (!content) {
       return NextResponse.json(
@@ -50,10 +51,10 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     // Add comment
     const updatedPost = await addCommentToPost(
-      context.params.id,
+      params.id,
       user,
       content,
       codeSnippet,

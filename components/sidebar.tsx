@@ -1,8 +1,10 @@
 'use client';
 
-import { Home, TrendingUp, Hash, Users, Archive } from 'lucide-react';
+import { Home, TrendingUp, Hash, Users, Archive, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/ui/button';
+import { useEffect, useState } from 'react';
+import { User } from '@/lib/types';
 
 const sidebarLinks = [
   { icon: Home, label: 'Home', href: '/' },
@@ -18,8 +20,26 @@ const categories = [
 ];
 
 export function Sidebar() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/user');
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   return (
-    <aside className="hidden lg:block w-64 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto border-r bg-background">
+    <aside className="hidden lg:block w-64 sticky top-[3.5rem] h-[calc(100vh-3.5rem)] overflow-y-auto border-r bg-background">
       <div className="p-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">Menu</h3>
         <nav className="space-y-1">
@@ -37,6 +57,19 @@ export function Sidebar() {
               </Link>
             );
           })}
+          
+          {/* Admin Link - Only show when user is admin */}
+          {user?.isAdmin && (
+            <Link href="/admin">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-10"
+              >
+                <Shield className="h-5 w-5" />
+                <span className="flex-1 text-left font-medium">Admin Panel</span>
+              </Button>
+            </Link>
+          )}
         </nav>
 
         <div className="mt-8">

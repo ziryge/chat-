@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Edit3, Share2, Bookmark, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowDown, Edit3, Share2, Bookmark, MoreHorizontal, Code2 } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Avatar } from '@/ui/avatar';
 import { Badge as BadgeComponent, Badge } from '@/ui/badge';
 import { CommentSection } from '@/components/comment-section';
+import { MediaEmbedCompact } from '@/components/media-preview';
+import { MentionableText } from '@/components/mentionable-text';
+import { loadInstagramEmbed } from '@/lib/media-client';
 import { Post } from '@/lib/types';
 import { formatNumber } from '@/lib/utils';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -51,6 +54,13 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   useEffect(() => {
     fetchPost();
   }, [postId]);
+
+  useEffect(() => {
+    // Load Instagram embeds if post has media
+    if (post && post.mediaEmbeds && post.mediaEmbeds.some((m: any) => m.type === 'instagram')) {
+      loadInstagramEmbed();
+    }
+  }, [post]);
 
   const fetchPost = async () => {
     try {
@@ -108,7 +118,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-4">
+    <div className="max-w-4xl mx-auto py-6 px-4 pt-20">
       {/* Back Button */}
       <Link href="/">
         <Button variant="ghost" className="mb-4 gap-2">
@@ -168,14 +178,24 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       {/* Post Content */}
       <div className="mb-8">
         <div className="prose prose-invert max-w-none">
-          <p className="text-lg leading-relaxed whitespace-pre-line mb-6">
-            {post.content}
-          </p>
+          <div className="text-lg leading-relaxed whitespace-pre-line mb-6">
+            <MentionableText text={post.content} />
+          </div>
+
+          {/* Media Embeds */}
+          {post.mediaEmbeds && post.mediaEmbeds.length > 0 && (
+            <div className="mb-6 space-y-6">
+              {post.mediaEmbeds.map((media, index) => (
+                <MediaEmbedCompact key={`${media.type}-${media.id}-${index}`} embed={media} />
+              ))}
+            </div>
+          )}
 
           {post.codeSnippet && (
             <div className="mb-6 rounded-xl border bg-[#1e1e1e] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#333] bg-[#1e1e1e]">
                 <div className="flex items-center gap-2">
+                  <Code2 className="h-4 w-4" />
                   <span className="text-sm font-medium text-muted-foreground">Code Snippet</span>
                 </div>
                 <span className="text-sm text-muted-foreground">{post.codeSnippet.language}</span>

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllPostsWithVotes, savePost } from '@/lib/posts';
-import { getSession, getUserById } from '@/lib/storage';
+import { getSession, getUserById, getUserByUsername, saveNotification, saveMention } from '@/lib/storage';
 import { generateId } from '@/lib/auth';
+import { parseMediaLinks, stripMediaLinks } from '@/lib/media';
+import { getMentionedUsernames } from '@/lib/mentions';
 
 // GET /api/posts - Get all posts
 export async function GET(request: NextRequest) {
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, content, category, tags, codeSnippet } = body;
+    const { title, content, category, tags, codeSnippet, mediaEmbeds } = body;
     
     // Get current user from session
     const { cookies } = await import('next/headers');
@@ -85,6 +87,9 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Parse media links from content if not provided
+    const parsedEmbeds = mediaEmbeds || parseMediaLinks(content);
+    
     // Create post
     const newPost = {
       id: generateId(),
@@ -92,6 +97,7 @@ export async function POST(request: NextRequest) {
       title,
       content,
       codeSnippet,
+      mediaEmbeds: parsedEmbeds.length > 0 ? parsedEmbeds : undefined,
       tags: tags || [],
       votes: 0,
       userVote: null,
@@ -107,10 +113,50 @@ export async function POST(request: NextRequest) {
     const updatedUser = { ...user, posts: user.posts + 1 };
     await (await import('@/lib/storage')).saveUser(updatedUser);
     
-    return NextResponse.json({
-      success: true,
-      post: newPost,
-    }, { status: 201 });
+    // Process @mentions and create notifications
+    const mentionedUsernames = getMentionedUsernames(content);
+    for (const username of mentionedUsernames) {
+      const mentionedUser = await getUserByUsername(username);
+      if (mentionedUser && mentionedUser.id !== user.id) {
+        // Save mention
+        await saveMention({
+          id: generateId(),
+          mentionedUserId: mentionedUser.id,
+          mentionedBy: {
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+          },
+          postId: newPost.id,
+          createdAt: new Date(),
+        });
+        
+        // Create notification for mentioned user
+        await saveNotification({
+          id: generateId(),
+          type: 'mention',
+          userId: mentionedUser.id,
+          user: {
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            avatar: user.avatar,
+          },
+          postId: newPost.id,
+          postTitle: title,
+          read: false,
+          createdAt: new Date(),
+        });
+      }
+    }
+    
+    return NextResponse.json(
+      {
+        success: true,
+        post: newPost,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Create post error:', error);
     return NextResponse.json(

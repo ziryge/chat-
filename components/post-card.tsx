@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, Code2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, Code2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardFooter } from '@/ui/card';
 import { Button } from '@/ui/button';
 import { Avatar } from '@/ui/avatar';
-import { Badge } from '@/ui/badge';
-import { Post } from '@/lib/types';
+import { Badge as BadgeUI } from '@/ui/badge';
+import { Post, User, Badge as BadgeType } from '@/lib/types';
 import { formatDate, formatNumber } from '@/lib/utils';
+import { MentionableText } from '@/components/mentionable-text';
+import { MediaEmbedCompact, parseMediaLinks } from '@/components/media-preview';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -41,6 +43,36 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
   const [votes, setVotes] = useState(post.votes);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(post.userVote || null);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/user');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+
+    fetchCurrentUser();
+
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleVote = async (direction: 'up' | 'down') => {
     try {
@@ -59,6 +91,36 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/posts/${post.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh the page to remove the post
+        window.location.reload();
+      } else {
+        alert('Failed to delete post');
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post');
+    } finally {
+      setDeleting(false);
+      setShowDropdown(false);
+    }
+  };
+
+  const isAdmin = currentUser?.isAdmin === true;
+  const isPostAuthor = currentUser?.id === post.author.id;
+  const canDelete = isAdmin || isPostAuthor;
+
   const postContent = (
     <>
       <CardHeader className="p-4 pb-3">
@@ -67,13 +129,48 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
             <Avatar user={post.author} />
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-semibold text-sm truncate">{post.author.displayName}</span>
+              {post.author.isAdmin && (
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-primary text-primary-foreground">
+                  Admin
+                </span>
+              )}
               <span className="text-muted-foreground text-sm">@{post.author.username}</span>
               <span className="text-muted-foreground text-sm">· {formatDate(post.createdAt)}</span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          
+          {/* 3-dot menu */}
+          {canDelete && (
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+              
+              {showDropdown && (
+                <div className="absolute right-0 top-full mt-1 z-50 bg-background border rounded-lg shadow-lg min-w-[160px] p-1">
+                  <button
+                    onClick={handleDeletePost}
+                    disabled={deleting}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deleting ? 'Deleting...' : 'Delete Post'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {!canDelete && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 invisible">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
 
@@ -100,10 +197,24 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
               {post.title}
             </h2>
           </Link>
-          <p className="text-foreground/80 leading-relaxed whitespace-pre-line">
-            {post.content}
-          </p>
+          {post.mediaEmbeds && post.mediaEmbeds.length > 0 ? (
+            <div className="mb-3">
+              {post.mediaEmbeds.slice(0, 2).map((media, index) => (
+                <MediaEmbedCompact key={`${media.type}-${media.id}-${index}`} embed={media} />
+              ))}
+            </div>
+          ) : null}
+          <MentionableText text={post.content} />
         </div>
+
+        {/* Media Embeds - show remaining ones */}
+        {post.mediaEmbeds && post.mediaEmbeds.length > 2 && (
+          <div className="mb-4">
+            {post.mediaEmbeds.slice(2).map((media, index) => (
+              <MediaEmbedCompact key={`${media.type}-${media.id}-${index}`} embed={media} />
+            ))}
+          </div>
+        )}
 
         {post.codeSnippet && (
           <div className="mb-4 rounded-lg border bg-[#1e1e1e] overflow-hidden">
@@ -139,7 +250,7 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
         {post.author.badges.length > 0 && variant !== 'compact' && (
           <div className="flex flex-wrap gap-2 mt-4">
             {post.author.badges.slice(0, 3).map((badge) => (
-              <Badge key={badge.id} badge={badge} />
+              <BadgeUI key={badge.id} badge={badge} />
             ))}
           </div>
         )}
@@ -205,7 +316,7 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
             <Button
               variant="ghost"
               size="icon"
-              className={`h-7 w-7 ${userVote === 'up' ? 'text-green-600 dark:text-green-500' : ''}`}
+              className={`h-7 w-7 ${userVote === 'up' ? 'text-white' : ''}`}
               onClick={() => handleVote('up')}
             >
               <ArrowUp className="h-4 w-4" />
@@ -214,7 +325,7 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
             <Button
               variant="ghost"
               size="icon"
-              className={`h-7 w-7 ${userVote === 'down' ? 'text-red-600 dark:text-red-500' : ''}`}
+              className={`h-7 w-7 ${userVote === 'down' ? 'text-white' : ''}`}
               onClick={() => handleVote('down')}
             >
               <ArrowDown className="h-4 w-4" />

@@ -3,11 +3,14 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Navigation } from '@/components/navigation'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Devsquare - Where Developers Connect',
-  description: 'A developer-focused social media platform for sharing knowledge, code, and opportunities.',
+  title: 'Devsquare',
+  description: 'Where developers connect and build together',
 }
 
 export default function RootLayout({
@@ -17,11 +20,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={inter.className}>
+      <body className={`${inter.className} antialiased`}>
         <Navigation />
-        <main className="min-h-screen bg-background">
+        <main className="min-h-screen bg-black">
           {children}
         </main>
+        <script
+          async
+          src="https://www.instagram.com/embed.js"
+        ></script>
       </body>
     </html>
   )

@@ -90,8 +90,13 @@ export async function DELETE(
     // Delete post
     await deletePostStorage(params.id);
     
-    // Update user's post count
-    const updatedUser = { ...user, posts: Math.max(0, user.posts - 1) };
+    // Update user's post and comment counts
+    const commentCount = post.comments.length;
+    const updatedUser = { 
+      ...user, 
+      posts: Math.max(0, user.posts - 1),
+      comments: Math.max(0, user.comments - commentCount),
+    };
     await (await import('@/lib/storage')).saveUser(updatedUser);
     
     return NextResponse.json({

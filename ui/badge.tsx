@@ -20,7 +20,7 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
         ref={ref}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border",
-          badgeLevelColors[badge.level],
+          badgeLevelColors[badge.level] || "bg-secondary text-foreground border-border",
           className
         )}
         title={badge.description}

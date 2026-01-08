@@ -6,9 +6,11 @@ import { Button } from '@/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 import { Badge } from '@/ui/badge';
 import { Textarea } from '@/ui/textarea';
+import { MediaPreview } from '@/components/media-preview';
+import { parseMediaLinks } from '@/lib/media';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Code2, X, Plus } from 'lucide-react';
+import { Code2, X, Plus, Video } from 'lucide-react';
 
 const CATEGORIES = [
   { value: 'discussion', label: 'Discussion' },
@@ -60,12 +62,18 @@ export function CreatePost({ onClose, inDialog = false }: CreatePostProps) {
     setLoading(true);
 
     try {
+      const embeds = parseMediaLinks(content);
+      
       const payload: any = {
         title,
         content,
         category,
         tags,
       };
+
+      if (embeds.length > 0) {
+        payload.mediaEmbeds = embeds;
+      }
 
       if (includeCode && codeSnippet.trim()) {
         payload.codeSnippet = {
@@ -112,7 +120,7 @@ export function CreatePost({ onClose, inDialog = false }: CreatePostProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-500/10 rounded-md">
+            <div className="p-3 text-sm text-white bg-white/10 rounded">
               {error}
             </div>
           )}
@@ -160,14 +168,18 @@ export function CreatePost({ onClose, inDialog = false }: CreatePostProps) {
 
           {/* Content */}
           <div className="space-y-2">
-            <label htmlFor="content" className="text-sm font-medium">
+            <label htmlFor="content" className="text-sm font-medium flex items-center gap-2">
               Content *
+              <Video className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-normal">
+                (YouTube, TikTok, Instagram, Twitter, Vimeo, Spotify links will auto-embed)
+              </span>
             </label>
             <Textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your thoughts, ask questions, or show off your code..."
+              placeholder="Share your thoughts, ask questions, or show off your code...&#10;&#10;Drop any of these links to embed them:&#10;• YouTube: https://youtube.com/watch?v=...&#10;• TikTok: https://tiktok.com/@user/video/...&#10;• Instagram: https://instagram.com/p/...&#10;• Twitter: https://twitter.com/user/status/...&#10;• Vimeo: https://vimeo.com/...&#10;• Spotify: https://open.spotify.com/track/..."
               className="min-h-[200px] resize-y"
               required
               maxLength={5000}
@@ -176,6 +188,9 @@ export function CreatePost({ onClose, inDialog = false }: CreatePostProps) {
               {content.length}/5000 characters
             </p>
           </div>
+
+          {/* Media Link Preview */}
+          <MediaPreview content={content} />
 
           {/* Tags */}
           <div className="space-y-2">

@@ -1,9 +1,9 @@
 import { Post, Comment, User } from './types';
-import { getAllPosts, savePost as savePostToStorage, getPostById as getPostFromStorage, deletePost as deletePostFromStorage } from './storage';
+import { getAllPosts, savePost, getPostById as getPostFromStorage, deletePost as deletePostFromStorage } from './storage';
 import { generateId } from './auth';
 
-// Re-export savePost and deletePost for use in API routes
-export { savePostToStorage as savePost };
+// Re-export for use in API routes
+export { savePost };
 export { deletePostFromStorage as deletePost };
 
 // Vote storage
