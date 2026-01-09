@@ -11,8 +11,7 @@ import { Post, User, Badge as BadgeType } from '@/lib/types';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { MentionableText } from '@/components/mentionable-text';
 import { MediaEmbedCompact, parseMediaLinks } from '@/components/media-preview';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodePreview } from '@/components/code-preview';
 
 const categoryColors: Record<string, string> = {
   discussion: 'bg-secondary text-foreground border-border',
@@ -217,33 +216,15 @@ export function PostCard({ post, variant = 'default' }: PostCardProps) {
         )}
 
         {post.codeSnippet && (
-          <div className="mb-4 rounded-lg border bg-[#1e1e1e] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-[#333] bg-[#1e1e1e]">
-              <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-primary" />
-                <span className="text-sm text-muted-foreground">Code Snippet</span>
-              </div>
-              <span className="text-xs text-muted-foreground">{post.codeSnippet.language}</span>
-            </div>
-            <SyntaxHighlighter
-              language={post.codeSnippet.language.toLowerCase()}
-              style={vscDarkPlus}
-              customStyle={{
-                margin: 0,
-                padding: '1rem',
-                fontSize: '0.875rem',
-                background: '#1e1e1e',
-              }}
-              showLineNumbers
-              lineNumberStyle={{
-                color: '#858585',
-                fontSize: '0.875rem',
-                paddingRight: '1rem',
-                textAlign: 'right',
-              }}
-            >
-              {post.codeSnippet.code}
-            </SyntaxHighlighter>
+          <div className="mb-4">
+            <CodePreview
+              code={post.codeSnippet.code}
+              language={post.codeSnippet.language as any}
+              showCopyButton={true}
+              authorUsername={post.author.username}
+              authorDisplayName={post.author.displayName}
+              postTitle={post.title}
+            />
           </div>
         )}
 

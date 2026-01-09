@@ -8,8 +8,7 @@ import { Badge } from '@/ui/badge';
 import { Textarea } from '@/ui/textarea';
 import { MediaPreview } from '@/components/media-preview';
 import { parseMediaLinks } from '@/lib/media';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodePreview } from '@/components/code-preview';
 import { Code2, X, Plus, Video } from 'lucide-react';
 
 const CATEGORIES = [
@@ -257,20 +256,19 @@ export function CreatePost({ onClose, inDialog = false }: CreatePostProps) {
                     ))}
                   </select>
                 </div>
-                <SyntaxHighlighter
-                  language={codeLanguage}
-                  style={vscDarkPlus}
-                  customStyle={{ borderRadius: '0.5rem' }}
-                >
-                  {codeSnippet || '// Type your code here...'}
-                </SyntaxHighlighter>
-                <Textarea
-                  value={codeSnippet}
-                  onChange={(e) => setCodeSnippet(e.target.value)}
+                <CodePreview
+                  code={codeSnippet}
+                  language={codeLanguage as any}
+                  showLanguageSelector={false}
+                  showCopyButton={false}
+                  editable={true}
+                  onCodeChange={setCodeSnippet}
+                  onLanguageChange={(lang) => setCodeLanguage(lang)}
                   placeholder="// Type or paste your code here..."
-                  className="font-mono text-sm min-h-[150px]"
-                  rows={8}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Live preview: See your code syntax highlighted as you type
+                </p>
               </div>
             )}
           </div>

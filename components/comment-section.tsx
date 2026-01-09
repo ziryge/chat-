@@ -8,8 +8,7 @@ import { Avatar } from '@/ui/avatar';
 import { Comment as CommentType } from '@/lib/types';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { MentionableText } from '@/components/mentionable-text';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodePreview } from '@/components/code-preview';
 
 interface CommentProps {
   comment: CommentType;
@@ -74,23 +73,14 @@ function Comment({ comment, isReply = false }: CommentProps) {
           </div>
 
           {comment.codeSnippet && (
-            <div className="mb-3 rounded-lg border bg-[#1e1e1e] overflow-hidden">
-              <div className="px-3 py-1.5 border-b border-[#333] bg-[#1e1e1e]">
-                <span className="text-xs text-muted-foreground">{comment.codeSnippet.language}</span>
-              </div>
-              <SyntaxHighlighter
-                language={comment.codeSnippet.language.toLowerCase()}
-                style={vscDarkPlus}
-                customStyle={{
-                  margin: 0,
-                  padding: '0.75rem',
-                  fontSize: '0.8125rem',
-                  background: '#1e1e1e',
-                }}
-                showLineNumbers
-              >
-                {comment.codeSnippet.code}
-              </SyntaxHighlighter>
+            <div className="mb-3">
+              <CodePreview
+                code={comment.codeSnippet.code}
+                language={comment.codeSnippet.language as any}
+                showCopyButton={true}
+                authorUsername={comment.author.username}
+                authorDisplayName={comment.author.displayName}
+              />
             </div>
           )}
 

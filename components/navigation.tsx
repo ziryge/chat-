@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, PlusSquare, User, Bell, LogOut, Home, Flame, Code2, MessageSquare, Users, UserPlus } from 'lucide-react';
+import { Search, PlusSquare, User, Bell, LogOut, Home, Flame, Code2, MessageSquare, Users, UserPlus, Terminal } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Avatar } from '@/ui/avatar';
 import { NotificationPanel } from '@/components/notification-panel';
@@ -143,6 +143,12 @@ export function Navigation() {
               <Button variant="ghost" className="gap-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg">
                 <UserPlus className="h-4 w-4" />
                 <span>Friends</span>
+              </Button>
+            </Link>
+            <Link href="/code-playground" className="hidden sm:block">
+              <Button variant="ghost" className="gap-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg">
+                <Terminal className="h-4 w-4" />
+                <span className="hidden sm:inline">Playground</span>
               </Button>
             </Link>
             <Button 

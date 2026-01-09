@@ -50,10 +50,20 @@ export async function GET(
     const dm = await getDirectMessageById(conversationId);
     
     if (dm && dm.participants.includes(user.id)) {
-      // Mark messages as read
-      dm.messages = dm.messages.map(m => 
-        m.senderId !== user.id ? { ...m, read: true } : m
-      );
+      // Mark messages as read (only if there are unread messages from other user)
+      let unreadChanged = false;
+      dm.messages = dm.messages.map(m => {
+        if (m.senderId !== user.id && !m.read) {
+          unreadChanged = true;
+          return { ...m, read: true };
+        }
+        return m;
+      });
+      
+      // Only save if we actually marked messages as read
+      if (unreadChanged) {
+        await saveDirectMessage(dm);
+      }
       
       // Get other user info
       const allUsers = await getAllUsers();
@@ -67,13 +77,25 @@ export async function GET(
           ...m,
           sender,
         };
-      }).filter((m): m is Message => m !== null),
-      
-      await saveDirectMessage(dm);
+      }).filter((m): m is Message => m !== null);
     } else {
-      // Try treating it as a user ID
+      // Try treating it as a user ID and create conversation if needed
       const allUsers = await getAllUsers();
       otherUser = allUsers.find(u => u.id === conversationId);
+      
+      if (otherUser) {
+        // Create new DM if it doesn't exist
+        const { getOrCreateDirectMessage } = await import('@/lib/messaging');
+        const dm = await getOrCreateDirectMessage(user.id, conversationId);
+        messages = dm.messages.map(m => {
+          const sender = allUsers.find(u => u.id === m.senderId);
+          if (!sender) return null;
+          return {
+            ...m,
+            sender,
+          };
+        }).filter((m): m is Message => m !== null);
+      }
     }
 
     return NextResponse.json({

@@ -45,10 +45,11 @@ export async function GET(request: NextRequest) {
     const conversations = messages.map(dm => {
       const otherUserId = dm.participants.find(id => id !== user.id);
       const otherUser = allUsers.find(u => u.id === otherUserId);
+      
       return {
         id: dm.id,
         user: otherUser,
-        lastMessage: dm.messages[dm.messages.length - 1],
+        lastMessage: dm.messages.length > 0 ? dm.messages[dm.messages.length - 1] : null,
         unreadCount: dm.messages.filter(m => !m.read && m.senderId !== user.id).length,
         updatedAt: dm.updatedAt,
       };
@@ -113,22 +114,31 @@ export async function POST(request: NextRequest) {
     // Get or create direct message conversation
     const dm = await getOrCreateDirectMessage(user.id, toUserId);
 
-    // Create new message
-    const message: Message = {
+    // Create new message - include sender info for client response
+    const messageInfo = {
       id: crypto.randomUUID(),
       senderId: user.id,
-      sender: user,
       content,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       read: false,
     };
 
-    const updatedDM = await addMessageToDM(dm.id, message);
+    // Message with full sender info for response
+    const message: Message = {
+      id: messageInfo.id,
+      senderId: messageInfo.senderId,
+      sender: user,
+      content: messageInfo.content,
+      timestamp: messageInfo.timestamp,
+      read: messageInfo.read,
+    };
+
+    await addMessageToDM(dm.id, messageInfo as any);
 
     return NextResponse.json({
       success: true,
       message,
-      conversation: updatedDM,
+      conversationId: dm.id,
     });
   } catch (error) {
     console.error('Send message error:', error);

@@ -50,7 +50,10 @@ export default function ChatPage() {
       const response = await fetch('/api/messages');
       if (response.ok) {
         const data = await response.json();
-        setConversations(data.conversations);
+        console.log('Conversations data:', data);
+        setConversations(data.conversations || []);
+      } else {
+        console.error('Failed to fetch conversations:', await response.text());
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);

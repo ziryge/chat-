@@ -24,6 +24,13 @@ export default function ChatConversationPage() {
   useEffect(() => {
     fetchCurrentUser();
     fetchMessages();
+    
+    // Poll for new messages every 5 seconds
+    const interval = setInterval(() => {
+      fetchMessages();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, [conversationId]);
 
   useEffect(() => {
@@ -52,8 +59,11 @@ export default function ChatConversationPage() {
       const response = await fetch(`/api/messages/${conversationId}`);
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.messages);
+        console.log('Messages response:', data);
+        setMessages(data.messages || []);
         setOtherUser(data.otherUser);
+      } else {
+        console.error('Failed to fetch messages:', await response.text());
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
